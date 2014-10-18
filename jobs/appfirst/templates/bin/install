@@ -1,0 +1,101 @@
+#! /bin/bash
+
+if [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
+then
+  echo "AppFirst collector is already installed."
+  exit 0
+fi
+
+source /var/vcap/jobs/appfirst/shell/env
+
+echo "Installing and configuring appfirst for ${arch}..."
+
+# Find the system install command.
+install=$(PATH="/sbin:/bin:/usr/sbin:/usr/bin" which install)
+
+# Install AppFirst binaries, libraries and scripts
+rsync -a --delete ${srcPath}/plugins/ ${pluginsPath}/
+rsync -a --delete ${srcPath}/lib/ ${libPath}/
+chmod -R 0755 ${pluginsPath} ${libPath} ${sharePath}
+
+${install} -m 0755 -T ${srcPath}/bin/collector \
+	${binPath}/${binName}
+
+${install} -d ${sharePath}/lib
+for file in ${srcPath}/lib/* 
+do 
+	case ${file} in
+		(*libwrap.so*)
+			${install} -m 0755 -T ${file} \
+				${sharePath}/${file##*/}
+			;;
+		(*)
+			${install} -m 0755 -T ${file} \
+				${libPath}/${file##*/}
+			;;
+	esac
+done
+chmod 0555 ${sharePath}/libwrap.so.1.0.1 
+
+(
+  cd ${libPath}
+  rm -f libprotobuf-c.so.0
+  ln -s libprotobuf-c.so.0.0.0 libprotobuf-c.so.0
+)
+
+# Add to system LD_LIBRARY_PATH
+echo "${sharePath}" > ${etcPath}/af.ld.so.conf 
+${install} -m 0755 -T ${etcPath}/af.ld.so.conf \
+	/etc/ld.so.conf.d/afcollector.conf
+ldconfig -v > ${logPath}/ldconfig.log 2>&1
+
+# Whitelist AppFirst Collector within AppArmor
+appArmorFile=/etc/apparmor.d/abstractions/base
+[[ -e ${appArmorFile} ]] && grep -q -w "AppFirst" ${appArmorFile} ||
+	{
+		cat >> ${appArmorFile} <<EOF
+# AppFirst
+/etc/AppFirst r,    # AppFirst
+${sharePath}/libwrap.so.1.0.1 mr,    # AppFirst
+/dev/shm/ld_preload mr,    # AppFirst
+/run/shm/ld_preload mr,    # AppFirst
+/proc/*/stat mr,    # AppFirst
+EOF
+		/usr/sbin/invoke-rc.d apparmor reload
+	}
+# TODO: SELinux Flavor, address and test for CentOS stemcells.
+
+# Configure the system for AppFirst
+echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/ld_preload
+
+if [[ -s /etc/AppFirst ]]
+then collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null)
+fi
+
+for file in ld_preload AppFirst.proxy
+do ${install} -m 0644 -T ${configPath}/${file} /etc/${file}
+done
+
+if [[ -n ${collectorId} ]] # Preserve Collector ID
+then 
+	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" /etc/AppFirst > /etc/AppFirst.id
+	mv /etc/AppFirst.id /etc/AppFirst
+fi
+
+# Careful not to overwrite /etc/AppFirst if CollectorID has been assigned.
+[[-s /etc/AppFirst ]] && grep -q CollectorID /etc/AppFirst ||
+	${install} -m 0644 -T ${configPath}/${file} /etc/${file}
+
+# Create symlinks from BOSH paths so that the collector remains happy
+# NOTE: All of the below should be deleted once the collector allows
+#       for defining these locations.
+rm -rf /usr/share/appfirst /usr/bin/collector ${jobPath}/lib
+ln -fs ${libPath} /usr/share/appfirst 
+ln -fs ${binPath}/${binName} /usr/bin/collector
+ln -fs ${libPath} ${jobPath}/lib
+
+# Ensure the monitoring of all BOSH deployed CF jobs.
+# TODO: Test to see if this is necessary now that everythign is working as expected.
+grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh ||
+	echo "export LD_LIBRARY_PATH=${sharePath}" >> /var/vcap/packages/common/utils.sh
+

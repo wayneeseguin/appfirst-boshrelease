@@ -1,0 +1,6 @@
+---
+blobstore:
+  provider: swift
+  options:
+    container_name: appfirst-boshrelease
+    swift_provider: openstack

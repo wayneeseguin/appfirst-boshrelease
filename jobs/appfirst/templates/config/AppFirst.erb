@@ -1,0 +1,19 @@
+<configuration>
+   Enabled <%= p('appfirst.tenant_id') > 0 ? "True" : "False" %>
+   CollectPeriod <%= p('appfirst.collection_interval') %>
+   Profile <%= p('appfirst.profile_id') %>
+   URL <%= p('appfirst.backend_url') %>
+ <% if_p('appfirst.frontend_url') do |frontend_url| %>
+   URLfront <%= frontend_url %>
+ <% end %>
+   Tenant <%= p('appfirst.tenant_id') %>
+   DataDir <%= p('appfirst.data_path') %>
+   Include <%= p('appfirst.include_processes') %>
+   Exclude <%= p('appfirst.exclude_processes') %>
+   DiskSpace 512
+   MaxPaths 1024
+   LogDir <%= p('appfirst.log_path') %>
+   NagiosConfig <%= p('appfirst.nagios_config_file') %>
+   NagiosFreq <%= p('appfirst.nagios_interval') %>
+   StatsDPassThrough <%= p('appfirst.statsd_port_enable') %>
+</configuration>

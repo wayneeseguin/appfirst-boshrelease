@@ -1,0 +1,15 @@
+#!/bin/bash
+
+source /var/vcap/jobs/appfirst/shell/env
+source /var/vcap/jobs/appfirst/shell/functions
+
+case ${1} in
+	(check|remove)
+		appfirst_${1}_ld_preload
+		;;
+	(*)
+		fail "Usage: ld_preload {check|remove}"
+		;;
+esac
+
+exit 0

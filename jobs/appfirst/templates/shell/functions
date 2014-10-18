@@ -1,0 +1,75 @@
+#!/bin/bash
+
+fail() {
+	echo "$*" >&2
+	exit 1
+}
+
+pre_start() {
+	[[ -L /usr/bin/collector && -x /usr/bin/collector ]] || ${binPath}/install
+	appfirst_stop
+	ln -fs ${pidFile} /var/run/afcollector.pid
+	cp ${configPath}/AppFirst.init /etc/AppFirst.init
+}
+
+appfirst_start() {
+	pre_start
+	${binPath}/jmxcollector_ctl start
+	if ${binPath}/ld_preload check
+	then 
+		(setsid ${binPath}/attach 2 &)
+		exec ${binPath}/${binName}
+	else fail "appfirst_start(): ld_preload check failed."
+	fi
+}
+
+appfirst_stop() {
+	${binPath}/jmxcollector_ctl stop
+	${binPath}/ld_preload remove
+	pid=$(pidof ${binPath}/${binName} || true)
+	(( ${pid:-0} == 0 )) || kill -9 ${pid}
+	rm -f ${pidFile} /var/run/afcollector.pid
+}
+
+appfirst_remove_ld_preload() {
+	if [[ -f /etc/ld.so.preload ]]
+	then
+		export PATH=/usr/bin:/bin
+		cp -f /etc/ld.so.preload /etc/AppFirst.ld_preload
+		sed -e "#${sharePath}/libwrap.so#d" /etc/ld.so.preload > /etc/ld.so.preload
+		flen=$(stat /etc/ld.so.preload | grep Size | cut -d: -f2 | cut -c1-2)
+		if (( ${flen} < 3 ))
+		then rm -f /etc/ld.so.preload
+		fi
+	fi
+}
+
+appfirst_check_ld_preload() {
+	if [[ -f /etc/AppFirst.ld_preload ]]
+	then
+		unset LD_PRELOAD
+		if [[ -s /etc/ld.so.preload ]]
+		then
+			value=0
+			while read value
+			do
+				grep -q ${value} /etc/AppFirst.ld_preload ||
+					cat ${value} >> /etc/AppFirst.ld_preload
+			done < /etc/ld.so.preload
+		fi
+
+		if [[ -e /dev/shm ]]
+		then
+			cp -f /etc/AppFirst.ld_preload /dev/shm/.
+			chmod 0644 /dev/shm/ld_preload
+			ln -fs /dev/shm/ld_preload /etc/ld.so.preload
+		else
+			cp -f /etc/AppFirst.ld_preload /tmp/.
+			ln -fs /tmp/ld_preload /etc/ld.so.preload
+		fi
+	else
+		rm -f /etc/ld.so.preload
+		fail "ld_preload: WARNING: preload disabled: no ld_preload"
+	fi
+}
+

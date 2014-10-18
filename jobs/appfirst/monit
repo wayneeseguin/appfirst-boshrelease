@@ -1,0 +1,5 @@
+check process appfirst
+  with pidfile /var/vcap/sys/run/appfirst/appfirst.pid
+  start program "/var/vcap/jobs/appfirst/bin/appfirst_ctl start" with timeout 30 seconds
+  stop program "/var/vcap/jobs/appfirst/bin/appfirst_ctl stop"
+  group vcap

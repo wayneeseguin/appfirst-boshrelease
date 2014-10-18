@@ -1,0 +1,6 @@
+# AppFirst proxy configuration
+#
+# If it is required to use proxy to connect to the internet, please uncomment the following and edit appropriately
+#
+#Proxy-Server=192.168.1.105:3128
+#Proxy-UsrPwd=foo:bar

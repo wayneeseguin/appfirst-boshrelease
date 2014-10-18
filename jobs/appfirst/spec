@@ -1,0 +1,56 @@
+---
+name: appfirst
+packages:
+- appfirst
+templates:
+  bin/appfirst_ctl: bin/appfirst_ctl
+  bin/attach: bin/attach
+  bin/install: bin/install
+  bin/jmxcollector_ctl: bin/jmxcollector_ctl
+  bin/ld_preload: bin/ld_preload
+  shell/env.erb: shell/env
+  shell/functions: shell/functions
+  config/AppFirst.erb: config/AppFirst
+  config/AppFirst.proxy: config/AppFirst.proxy
+  etc/nrpe.cfg: etc/nrpe.cfg
+properties:
+  appfirst.tenant_id:
+    description: "The Tenant ID assigned to your AppFirst account. Required."
+  appfirst.tags:
+    description: "Server tags to apply to this instance. Optional."
+    default: ""
+  appfirst.backend_url:
+    description: "Backend AppFirst Collection Endpoint URL"
+    default: "https://backend.appfirst.com/SaveData.py/save_data"
+  appfirst.frontend_url:
+    description: "Frontend AppFirst URL, missing for www.appfirst.com"
+  appfirst.include_processes:
+    description: "Process names to expclicitely include."
+    default: ""
+  appfirst.exclude_processes:
+    description: "Process names to expclicitely exclude."
+    default: ""
+  appfirst.profile_id:
+    description: "Collector Profile ID"
+    default: 0
+  appfirst.collection_interval:
+    description: "Collection Interval, change only if you *really* know what you are doing."
+    default: 20
+  appfirst.nagios_config_file:
+    description: "Nagios Configuration File"
+    default: "/var/vcap/appfirst/etc/nrpe.cfg"
+  appfirst.nagios_interval:
+    description: "Nagios Check Interval Frequency, in seconds."
+    default: 300
+  appfirst.statsd_port_enable:
+    description: "Whether collector should bind and listen to the standard statsd port 8129. Valid values are 'True' and 'False'"
+    default: True
+  appfirst.log_path:
+    description: "Directory for the collector to log output to."
+    default: "/var/vcap/sys/log/appfirst"
+  appfirst.data_path:
+    description: "Directory in which collected data is held prior to upload."
+    default: "/var/vcap/jobs/appfirst/data"
+  appfirst.jmx_collector_enabled:
+    description: "Whether or not to enable the JMX Collector values are 'true' and 'false'"
+    default: false
