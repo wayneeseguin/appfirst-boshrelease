@@ -76,7 +76,7 @@ for file in ld_preload AppFirst.proxy
 do ${install} -m 0644 -T ${configPath}/${file} /etc/${file}
 done
 
-if [[ -n ${collectorId} ]] # Preserve Collector ID
+if [[ -n ${collectorId:-} ]] # Preserve Collector ID
 then 
 	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" /etc/AppFirst > /etc/AppFirst.id
 	mv /etc/AppFirst.id /etc/AppFirst
