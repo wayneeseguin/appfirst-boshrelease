@@ -92,7 +92,6 @@ fi
 rm -rf /usr/share/appfirst /usr/bin/collector ${jobPath}/lib
 ln -fs ${libPath} /usr/share/appfirst 
 ln -fs ${binPath}/${binName} /usr/bin/collector
-ln -fs ${libPath} ${jobPath}/lib
 
 # Ensure the monitoring of all BOSH deployed CF jobs.
 # TODO: Test to see if this is necessary now that everythign is working as expected.
