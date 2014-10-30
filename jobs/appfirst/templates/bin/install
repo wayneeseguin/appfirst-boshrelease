@@ -83,7 +83,7 @@ then
 fi
 
 # Careful not to overwrite /etc/AppFirst if CollectorID has been assigned.
-[[-s /etc/AppFirst ]] && grep -q CollectorID /etc/AppFirst ||
+[[ -s /etc/AppFirst ]] && grep -q CollectorID /etc/AppFirst ||
 	${install} -m 0644 -T ${configPath}/${file} /etc/${file}
 
 # Create symlinks from BOSH paths so that the collector remains happy

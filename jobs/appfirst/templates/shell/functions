@@ -6,7 +6,9 @@ fail() {
 }
 
 pre_start() {
-	[[ -L /usr/bin/collector && -x /usr/bin/collector ]] || ${binPath}/install
+	if ! [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
+	then ${binPath}/install
+	fi
 	appfirst_stop
 	ln -fs ${pidFile} /var/run/afcollector.pid
 	cp ${configPath}/AppFirst.init /etc/AppFirst.init
