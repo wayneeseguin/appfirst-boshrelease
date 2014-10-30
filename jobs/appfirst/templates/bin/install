@@ -68,7 +68,7 @@ EOF
 # Configure the system for AppFirst
 echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/ld_preload
 
-if [[ -s /etc/AppFirst ]]
+if [[ -e /etc/AppFirst && -s /etc/AppFirst ]]
 then collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null)
 fi
 
