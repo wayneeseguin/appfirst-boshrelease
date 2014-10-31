@@ -62,11 +62,11 @@ appfirst_check_ld_preload() {
 
 		if [[ -e /dev/shm ]]
 		then
-			cp -f /etc/AppFirst.ld_preload /dev/shm/.
+			cp -f /etc/AppFirst.ld_preload /dev/shm/ld_preload
 			chmod 0644 /dev/shm/ld_preload
 			ln -fs /dev/shm/ld_preload /etc/ld.so.preload
 		else
-			cp -f /etc/AppFirst.ld_preload /tmp/.
+			cp -f /etc/AppFirst.ld_preload /tmp/ld_preload
 			ln -fs /tmp/ld_preload /etc/ld.so.preload
 		fi
 	else

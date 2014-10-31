@@ -8,7 +8,7 @@ fi
 
 source /var/vcap/jobs/appfirst/shell/env
 
-echo "Installing and configuring appfirst for ${arch}..."
+echo "Installing and configuring appfirst for ${arch}... from ${srcPath}"
 
 # Find the system install command.
 install=$(PATH="/sbin:/bin:/usr/sbin:/usr/bin" which install)
@@ -21,21 +21,11 @@ chmod -R 0755 ${pluginsPath} ${libPath} ${sharePath}
 ${install} -m 0755 -T ${srcPath}/bin/collector \
 	${binPath}/${binName}
 
-${install} -d ${sharePath}/lib
-for file in ${srcPath}/lib/* 
-do 
-	case ${file} in
-		(*libwrap.so*)
-			${install} -m 0755 -T ${file} \
-				${sharePath}/${file##*/}
-			;;
-		(*)
-			${install} -m 0755 -T ${file} \
-				${libPath}/${file##*/}
-			;;
-	esac
+##${install} -d ${sharePath}/lib
+for file in ${srcPath}/lib/*libwrap*
+do ${install} -m 0755 -T ${file} ${sharePath}/${file##*/}
 done
-chmod 0555 ${sharePath}/libwrap.so.1.0.1 
+chmod 0555 ${sharePath}/libwrap.so.1.0.1
 
 (
   cd ${libPath}
@@ -66,13 +56,13 @@ EOF
 # TODO: SELinux Flavor, address and test for CentOS stemcells.
 
 # Configure the system for AppFirst
-echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/ld_preload
+echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/AppFirst.ld_preload
 
 if [[ -e /etc/AppFirst && -s /etc/AppFirst ]]
 then collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null)
 fi
 
-for file in ld_preload AppFirst.proxy
+for file in AppFirst.ld_preload AppFirst.proxy
 do ${install} -m 0644 -T ${configPath}/${file} /etc/${file}
 done
 
@@ -80,6 +70,8 @@ if [[ -n ${collectorId:-} ]] # Preserve Collector ID
 then 
 	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" /etc/AppFirst > /etc/AppFirst.id
 	mv /etc/AppFirst.id /etc/AppFirst
+else
+	cp ${configPath}/AppFirst /etc/AppFirst
 fi
 
 # Careful not to overwrite /etc/AppFirst if CollectorID has been assigned.
@@ -89,8 +81,8 @@ fi
 # Create symlinks from BOSH paths so that the collector remains happy
 # NOTE: All of the below should be deleted once the collector allows
 #       for defining these locations.
-rm -rf /usr/share/appfirst /usr/bin/collector ${jobPath}/lib
-ln -fs ${libPath} /usr/share/appfirst 
+rm -rf /usr/share/appfirst /usr/bin/collector
+ln -fs ${libPath} /usr/share/appfirst
 ln -fs ${binPath}/${binName} /usr/bin/collector
 
 # Ensure the monitoring of all BOSH deployed CF jobs.
