@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 if [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
 then

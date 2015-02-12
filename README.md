@@ -118,4 +118,4 @@ bosh ssh runner_z1 0 # Hop on and have a look around...
 Note, to restart all processes except AppFirst via Monit on a host run the following command as root on the host.
 
 ```sh
-monit summary | awk -F\' '/Process/&& !/appfirst/{print$2}' | xargs -n1 monit restart
+monit summary | awk -F\' '/Process/&& !/appfirst/{print $2}' | xargs -n1 monit restart
