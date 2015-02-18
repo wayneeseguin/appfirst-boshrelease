@@ -3,6 +3,7 @@
 source /var/vcap/jobs/appfirst/shell/env
 source /var/vcap/jobs/appfirst/shell/functions
 
+# Short circuit JMX Collector operations unless variable is set (see shell/env)
 [[ -n ${JMXCOLLECTOR:-} && -x ${JMXCOLLECTOR:-} ]] || exit 0
 
 unset LD_LIBRARY_PATH
