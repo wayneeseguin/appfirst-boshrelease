@@ -27,7 +27,7 @@ appfirst_start() {
 
 appfirst_stop() {
 	${binPath}/jmxcollector_ctl stop
-	${binPath}/ld_preload remove
+	# ${binPath}/ld_preload remove # For BOSH systems we do not want to do this.
 	pid=$(pidof ${binPath}/${binName} || true)
 	(( ${pid:-0} == 0 )) || kill -9 ${pid}
 	rm -f ${pidFile} /var/run/afcollector.pid
