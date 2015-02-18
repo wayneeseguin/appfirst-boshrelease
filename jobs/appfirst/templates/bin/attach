@@ -11,5 +11,6 @@ if (( ${seconds} > 0 ))
 then sleep $seconds
 fi
 
-${binPath}/${binName} -a
+# NOTE: The exit status of -a does not affect normal operations and thus ignored.
+${binPath}/${binName} -a &>/dev/null || true
 
