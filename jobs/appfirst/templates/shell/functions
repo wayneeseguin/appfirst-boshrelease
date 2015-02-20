@@ -20,7 +20,7 @@ appfirst_start() {
 	if ${binPath}/ld_preload check
 	then 
 		(setsid ${binPath}/attach 2 &)
-		exec ${binPath}/${binName}
+		exec ${binPath}/${binName} --piddir=${runPath}
 	else fail "appfirst_start(): ld_preload check failed."
 	fi
 }
