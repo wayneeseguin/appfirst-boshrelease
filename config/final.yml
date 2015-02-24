@@ -1,6 +1,7 @@
 ---
 blobstore:
-  provider: swift
+  provider: s3
   options:
-    container_name: appfirst-boshrelease
-    swift_provider: openstack
+    bucket_name: appfirst-boshrelease
+final_name: appfirst
+
