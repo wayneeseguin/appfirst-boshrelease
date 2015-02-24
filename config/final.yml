@@ -2,6 +2,4 @@
 blobstore:
   provider: s3
   options:
-    bucket_name: appfirst-boshrelease
-final_name: appfirst
-
+    bucket_name: dbz-appfirst-boshrelease
