@@ -16,6 +16,7 @@ install=$(PATH="/sbin:/bin:/usr/sbin:/usr/bin" which install)
 # Install AppFirst binaries, libraries and scripts
 rsync -a --delete ${srcPath}/plugins/ ${pluginsPath}/
 rsync -a --delete ${srcPath}/lib/ ${libPath}/
+mkdir -p ${pluginsPath} ${libPath} ${sharePath}
 chmod -R 0755 ${pluginsPath} ${libPath} ${sharePath}
 
 ${install} -m 0755 -T ${srcPath}/bin/collector \
