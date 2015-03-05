@@ -19,12 +19,12 @@ rsync -a --delete ${srcPath}/lib/ ${libPath}/
 mkdir -p ${pluginsPath} ${libPath} ${sharePath}
 chmod -R 0755 ${pluginsPath} ${libPath} ${sharePath}
 
-${install} -m 0755 -T ${srcPath}/bin/collector \
-	${binPath}/${binName}
+${install} -m 0755 -T ${srcPath}/bin/collector ${binPath}/${binName}
 
 ##${install} -d ${sharePath}/lib
 for file in ${srcPath}/lib/*libwrap*
-do ${install} -m 0755 -T ${file} ${sharePath}/${file##*/}
+do
+  ${install} -m 0755 -T ${file} ${sharePath}/${file##*/}
 done
 chmod 0555 ${sharePath}/libwrap.so.1.0.1
 
@@ -42,9 +42,12 @@ ldconfig -v > ${logPath}/ldconfig.log 2>&1
 
 # Whitelist AppFirst Collector within AppArmor
 appArmorFile=/etc/apparmor.d/abstractions/base
-[[ -e ${appArmorFile} ]] && grep -q -w "AppFirst" ${appArmorFile} ||
-	{
-		cat >> ${appArmorFile} <<EOF
+if [[ -s ${appArmorFile} ]]
+then
+  if ! grep -q -w "AppFirst" ${appArmorFile}
+  then
+  {
+    cat >> ${appArmorFile} <<EOF
 # AppFirst
 /etc/AppFirst r,    # AppFirst
 ${sharePath}/libwrap.so.1.0.1 mr,    # AppFirst
@@ -52,15 +55,18 @@ ${sharePath}/libwrap.so.1.0.1 mr,    # AppFirst
 /run/shm/ld_preload mr,    # AppFirst
 /proc/*/stat mr,    # AppFirst
 EOF
-		/usr/sbin/invoke-rc.d apparmor reload
-	}
+    /usr/sbin/invoke-rc.d apparmor reload
+  }
+  fi
+fi
 # TODO: SELinux Flavor, address and test for CentOS stemcells.
 
 # Configure the system for AppFirst
 echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/AppFirst.ld_preload
 
-if [[ -e /etc/AppFirst && -s /etc/AppFirst ]]
-then collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null)
+if [[ -s /etc/AppFirst ]]
+then 
+  collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null | head -1)
 fi
 
 for file in AppFirst.ld_preload AppFirst.proxy
@@ -70,14 +76,10 @@ done
 if [[ -n ${collectorId:-} ]] # Preserve Collector ID
 then 
 	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" /etc/AppFirst > /etc/AppFirst.id
-	mv /etc/AppFirst.id /etc/AppFirst
+	${install} -m 0644 -T /etc/AppFirst.id /etc/AppFirst
 else
-	cp ${configPath}/AppFirst /etc/AppFirst
+	${install} -m 0644 -T ${configPath}/AppFirst /etc/AppFirst
 fi
-
-# Careful not to overwrite /etc/AppFirst if CollectorID has been assigned.
-[[ -s /etc/AppFirst ]] && grep -q CollectorID /etc/AppFirst ||
-	${install} -m 0644 -T ${configPath}/${file} /etc/${file}
 
 # Create symlinks from BOSH paths so that the collector remains happy
 # NOTE: All of the below should be deleted once the collector allows
@@ -88,6 +90,8 @@ ln -fs ${binPath}/${binName} /usr/bin/collector
 
 # Ensure the monitoring of all BOSH deployed CF jobs.
 # TODO: Test to see if this is necessary now that everythign is working as expected.
-grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh ||
+if ! grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh
+then
 	echo "export LD_LIBRARY_PATH=${sharePath}" >> /var/vcap/packages/common/utils.sh
+fi
 

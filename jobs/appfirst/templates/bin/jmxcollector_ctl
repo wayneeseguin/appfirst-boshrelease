@@ -8,11 +8,8 @@ source /var/vcap/jobs/appfirst/shell/functions
 
 unset LD_LIBRARY_PATH
 
-case ${1} in
-	(start|stop)
-		exec ${JMXCOLLECTOR} ${1}
-		;;
-	(*)
-		fail "Usage: $0 {start|stop}"
-		;;
+action=${1}
+case ${action} in
+	(start|stop) exec ${JMXCOLLECTOR} ${action} ;;
+	(*) fail "Usage: $0 {start|stop}" ;;
 esac
