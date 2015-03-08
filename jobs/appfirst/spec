@@ -54,3 +54,6 @@ properties:
   appfirst.jmx_collector_enabled:
     description: "Whether or not to enable the JMX Collector values are 'true' and 'false'"
     default: false
+  appfirst.log_files:
+    description: "An array of log files to tell AppFirst to monitor."
+    default: []

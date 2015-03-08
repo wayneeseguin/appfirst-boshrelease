@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+if [[ ! -s appfirst/afcollector ]]
+then 
+  file="appfirst-latest-x86_64.deb"
+  url="http://wwws.appfirst.com/packages/updates/${file}"
+  version="106"
+
+  mkdir -p afupstream appfirst afcollector/{bin,conf,lib,plugins}
+
+  curl -sOL ${url}
+  tar zxf ${file} data.tar.gz
+  tar zxf data.tar.gz -C afupstream/
+
+  rm ${file} data.tar.gz
+
+  mv afupstream/usr/bin/collector                       afcollector/bin/afcollector
+  mv afupstream/usr/share/appfirst/afcollector.conf     afcollector/conf/
+  mv afupstream/usr/share/appfirst/*lib*                afcollector/lib/
+  mv afupstream/usr/share/appfirst/plugins2/{etc,share} afcollector/plugins/
+
+  tar -zvxf afupstream/usr/share/appfirst/plugins2/af_polled.tgz -C afcollector/plugins/
+  tar -cf afcollector.tar afcollector 
+  xz -9 afcollector.tar
+
+  rm -rf afcollector/ afupstream/
+
+  mv afcollector.tar.xz appfirst/afcollector-106.tar.xz
+fi
+
+
+

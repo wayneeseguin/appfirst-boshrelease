@@ -1,10 +1,6 @@
-set -e # exit immediately if a simple command exits with a non-zero status
-set -u # report the usage of uninitialized variables
-# Available variables
-#
-# $BOSH_COMPILE_TARGET - where this package & spec'd source files are available
-# $BOSH_INSTALL_TARGET - where you copy/install files to be included in package
-#                      - /var/vcap/packages/appfirst
+#!/bin/bash
 
-tar -Jxf appfirst/appfirst-0.99-2.x86_64.tar.xz -C ${BOSH_INSTALL_TARGET}
+set -e
+
+tar -Jxf appfirst/afcollector.tar.xz -C ${BOSH_INSTALL_TARGET}
 

@@ -1,35 +1,32 @@
 #!/bin/bash
 
-fail() {
-  echo "$*" >&2
-  exit 1
-}
+fail() { echo "$*" >&2 ; exit 1 ; }
 
 pre_start() {
   if ! [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
-  then ${binPath}/install
+  then ${jobPath}/bin/install
   fi
   appfirst_stop
   rm -f ${pidFile} 
-  ln -fs ${pidFile} /var/run/afcollector.pid
-  cp ${configPath}/AppFirst.init /etc/AppFirst.init
+  #ln -fs ${pidFile} /var/run/afcollector.pid
+  cp ${jobPath}/config/AppFirst.init ${pkgPath}/lib/AppFirst.init
 }
 
 appfirst_start() {
   pre_start
-  ${binPath}/jmxcollector_ctl start
-  if ${binPath}/ld_preload check
+  ${jobPath}/bin/jmxcollector_ctl start
+  if ${jobPath}/bin/ld_preload check
   then 
-    (setsid ${binPath}/attach 2 &)
-    exec ${binPath}/${binName} # --piddir=${runPath}
+    (setsid ${jobPath}/bin/attach 2 &)
+    exec ${binary} --piddir="${runPath}" --libdir="${pkgPath}/lib"
   else fail "appfirst_start(): ld_preload check failed."
   fi
 }
 
 appfirst_stop() {
-  ${binPath}/jmxcollector_ctl stop
-  # ${binPath}/ld_preload remove # For BOSH systems we do not want to do this.
-  pid=$(pidof ${binPath}/${binName} || true)
+  ${jobPath}/bin/jmxcollector_ctl stop
+  # ${jobPath}/bin/ld_preload remove # For BOSH systems we do not want to do this.
+  pid=$(pidof ${binary} || true)
   (( ${pid:-0} == 0 )) || kill -9 ${pid}
 }
 
@@ -38,7 +35,7 @@ appfirst_remove_ld_preload() {
   then
     export PATH=/usr/bin:/bin
     cp -f /etc/ld.so.preload /etc/AppFirst.ld_preload
-    sed -e "#${sharePath}/libwrap.so#d" /etc/ld.so.preload > /etc/ld.so.preload
+    sed -e "#${wrapPath}/libwrap.so#d" /etc/ld.so.preload > /etc/ld.so.preload
     flen=$(stat /etc/ld.so.preload | grep Size | cut -d: -f2 | cut -c1-2)
     if (( ${flen} < 3 ))
     then rm -f /etc/ld.so.preload
