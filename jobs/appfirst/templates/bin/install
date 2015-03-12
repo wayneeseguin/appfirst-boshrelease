@@ -66,8 +66,8 @@ fi
 
 # Ensure the monitoring of all BOSH deployed CF jobs.
 # TODO: Test to see if this is necessary now that everythign is working as expected.
-utilScript="/var/vcap/packages/common/utils.sh"
-if ! grep -q -x "export LD_LIBRARY_PATH=${wrapPath}" ${utilScript}
-then echo "export LD_LIBRARY_PATH=${wrapPath}" >> ${utilScript}
-fi
+#utilScript="/var/vcap/packages/common/utils.sh"
+#if ! grep -q -x "export LD_LIBRARY_PATH=${wrapPath}" ${utilScript}
+#then echo -e "\nexport LD_LIBRARY_PATH=${wrapPath}\n" >> ${utilScript}
+#fi
 
