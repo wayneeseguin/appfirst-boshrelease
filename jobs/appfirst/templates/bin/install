@@ -90,8 +90,7 @@ ln -fs ${binPath}/${binName} /usr/bin/collector
 
 # Ensure the monitoring of all BOSH deployed CF jobs.
 # TODO: Test to see if this is necessary now that everythign is working as expected.
-if ! grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh
-then
-	echo "export LD_LIBRARY_PATH=${sharePath}" >> /var/vcap/packages/common/utils.sh
-fi
+#if ! grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh
+#then echo -e "\nexport LD_LIBRARY_PATH=${sharePath}\n" >> /var/vcap/packages/common/utils.sh
+#fi
 
