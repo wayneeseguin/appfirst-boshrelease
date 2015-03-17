@@ -3,13 +3,12 @@
 fail() { echo "$*" >&2 ; exit 1 ; }
 
 pre_start() {
-  if ! [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
-  then ${jobPath}/bin/install
-  fi
+  [[ -s ${wrapPath}/AppFirst ]] || ${jobPath}/bin/install
+
   appfirst_stop
-  rm -f ${pidFile} 
-  #ln -fs ${pidFile} /var/run/afcollector.pid
-  cp ${jobPath}/config/AppFirst.init ${pkgPath}/lib/AppFirst.init
+
+  # In case tag changes from BOSH upstream properties we do this each time:
+  cp ${jobPath}/config/AppFirst.init ${wrapPath}/AppFirst.init
 }
 
 appfirst_start() {
@@ -18,7 +17,6 @@ appfirst_start() {
   if ${jobPath}/bin/ld_preload check
   then 
     (setsid ${jobPath}/bin/attach 2 &)
-
     exec ${binary} --piddir=${runPath} --logdir=${logPath} --libdir=${pkgPath}/lib --datadir=${storePath}/data -D
   else fail "appfirst_start(): ld_preload check failed."
   fi
@@ -28,7 +26,13 @@ appfirst_stop() {
   ${jobPath}/bin/jmxcollector_ctl stop
   # ${jobPath}/bin/ld_preload remove # For BOSH systems we do not want to do this.
   pid=$(pidof ${binary} || true)
-  (( ${pid:-0} == 0 )) || kill -9 ${pid}
+  if (( ${pid:-0} > 0 ))
+  then
+    kill -TERM ${pid}
+    sleep 3 # give it 3 seconds to be graceful...
+    kill -9 ${pid}
+  fi
+  rm -f ${pidFile} 
 }
 
 appfirst_remove_ld_preload() {

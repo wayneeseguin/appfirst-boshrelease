@@ -52,7 +52,7 @@ if [[ -s ${configFile} ]]
 then collectorId=$(awk '/CollectorID/{print $2}' ${configFile} 2>/dev/null | head -1)
 fi
 
-for file in AppFirst.ld_preload AppFirst.proxy
+for file in AppFirst.ld_preload
 do ${install} -m 0644 -T ${jobPath}/config/${file} /etc/${file}
 done
 
@@ -64,10 +64,5 @@ else
 	${install} -m 0644 -T ${jobPath}/config/AppFirst ${configFile}
 fi
 
-# Ensure the monitoring of all BOSH deployed CF jobs.
-# TODO: Test to see if this is necessary now that everythign is working as expected.
-#utilScript="/var/vcap/packages/common/utils.sh"
-#if ! grep -q -x "export LD_LIBRARY_PATH=${wrapPath}" ${utilScript}
-#then echo -e "\nexport LD_LIBRARY_PATH=${wrapPath}\n" >> ${utilScript}
-#fi
+cp ${jobPath}/config/AppFirst.proxy ${wrapPath}/AppFirst.proxy
 

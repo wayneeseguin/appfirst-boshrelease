@@ -50,7 +50,7 @@ properties:
     default: "/var/vcap/sys/log/appfirst"
   appfirst.data_path:
     description: "Directory in which collected data is held prior to upload."
-    default: "/var/vcap/jobs/appfirst/data"
+    default: "/var/vcap/store/appfirst/data"
   appfirst.jmx_collector_enabled:
     description: "Whether or not to enable the JMX Collector values are 'true' and 'false'"
     default: false
