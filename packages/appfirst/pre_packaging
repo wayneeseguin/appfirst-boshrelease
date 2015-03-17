@@ -2,19 +2,20 @@
 
 set -e
 
-if [[ ! -s appfirst/afcollector ]]
+file="afcollector-106.tar.xz"
+if [[ ! -s appfirst/${file} ]]
 then 
-  file="appfirst-latest-x86_64.deb"
-  url="http://wwws.appfirst.com/packages/updates/${file}"
+  deb="appfirst-latest-x86_64.deb"
+  url="http://wwws.appfirst.com/packages/updates/${deb}"
   version="106"
 
   mkdir -p afupstream appfirst afcollector/{bin,conf,lib,plugins}
 
   curl -sOL ${url}
-  tar zxf ${file} data.tar.gz
+  tar zxf ${deb} data.tar.gz
   tar zxf data.tar.gz -C afupstream/
 
-  rm ${file} data.tar.gz
+  rm ${deb} data.tar.gz
 
   mv afupstream/usr/bin/collector                       afcollector/bin/afcollector
   mv afupstream/usr/share/appfirst/afcollector.conf     afcollector/conf/
@@ -27,7 +28,7 @@ then
 
   rm -rf afcollector/ afupstream/
 
-  mv afcollector.tar.xz appfirst/afcollector-106.tar.xz
+  mv afcollector.tar.xz appfirst/${file}
 fi
 
 

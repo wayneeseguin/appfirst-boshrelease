@@ -2,5 +2,7 @@
 
 set -e
 
-tar -Jxf appfirst/afcollector.tar.xz -C ${BOSH_INSTALL_TARGET}
+file="afcollector-106.tar.xz"
+
+tar -Jxf appfirst/${file} --strip-components=1 -C ${BOSH_INSTALL_TARGET}
 

@@ -18,7 +18,8 @@ appfirst_start() {
   if ${jobPath}/bin/ld_preload check
   then 
     (setsid ${jobPath}/bin/attach 2 &)
-    exec ${binary} --piddir="${runPath}" --libdir="${pkgPath}/lib"
+
+    exec ${binary} --piddir=${runPath} --logdir=${logPath} --libdir=${pkgPath}/lib --datadir=${storePath}/data -D
   else fail "appfirst_start(): ld_preload check failed."
   fi
 }
