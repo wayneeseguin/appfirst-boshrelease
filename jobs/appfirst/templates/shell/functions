@@ -9,8 +9,7 @@ pre_start() {
 
   # In case tag changes from BOSH upstream properties we do this each time:
   cp ${jobPath}/config/AppFirst.init ${wrapPath}/AppFirst.init
-  # The next line is a hack because collector is not checking in given paths...
-  cp ${jobPath}/config/AppFirst.init /etc/AppFirst.init
+  cp ${jobPath}/config/AppFirst.init ${pkgPath}/lib/AppFirst.init
 }
 
 appfirst_start() {
