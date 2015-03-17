@@ -1,47 +1,29 @@
 #!/bin/bash
 
-if [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
-then
-  echo "AppFirst collector is already installed."
-  exit 0
-fi
-
 source /var/vcap/jobs/appfirst/shell/env
 
-echo "Installing and configuring appfirst for ${arch}... from ${srcPath}"
+echo "Installing and configuring appfirst for ${arch}... from ${pkgPath}"
+
+if [[ -x ${pkgPath}/libwrap.so.1.0.1 ]]
+then
+  echo "AppFirst is already installed."
+  exit 0
+fi
 
 # Find the system install command.
 install=$(PATH="/sbin:/bin:/usr/sbin:/usr/bin" which install)
 
-# Install AppFirst binaries, libraries and scripts
-rsync -a --delete ${srcPath}/plugins/ ${pluginsPath}/
-rsync -a --delete ${srcPath}/lib/ ${libPath}/
-mkdir -p ${pluginsPath} ${libPath} ${sharePath}
-chmod -R 0755 ${pluginsPath} ${libPath} ${sharePath}
-
-${install} -m 0755 -T ${srcPath}/bin/collector ${binPath}/${binName}
-
-##${install} -d ${sharePath}/lib
-for file in ${srcPath}/lib/*libwrap*
-do
-  ${install} -m 0755 -T ${file} ${sharePath}/${file##*/}
-done
-chmod 0555 ${sharePath}/libwrap.so.1.0.1
-
-(
-  cd ${libPath}
-  rm -f libprotobuf-c.so.0
-  ln -s libprotobuf-c.so.0.0.0 libprotobuf-c.so.0
-)
+for file in ${pkgPath}/lib/libwrap.so.1.0.1
+do ${install} -m 0555 -T ${file} ${wrapPath}/${file##*/}
+done ; chmod 0555 ${wrapPath}/libwrap.so.1.0.1
 
 # Add to system LD_LIBRARY_PATH
-echo "${sharePath}" > ${etcPath}/af.ld.so.conf 
-${install} -m 0755 -T ${etcPath}/af.ld.so.conf \
-	/etc/ld.so.conf.d/afcollector.conf
+echo "${wrapPath}" > ${jobPath}/etc/af.ld.so.conf 
+${install} -m 0755 -T ${jobPath}/etc/af.ld.so.conf /etc/ld.so.conf.d/afcollector.conf
 ldconfig -v > ${logPath}/ldconfig.log 2>&1
 
 # Whitelist AppFirst Collector within AppArmor
-appArmorFile=/etc/apparmor.d/abstractions/base
+appArmorFile="/etc/apparmor.d/abstractions/base"
 if [[ -s ${appArmorFile} ]]
 then
   if ! grep -q -w "AppFirst" ${appArmorFile}
@@ -50,47 +32,37 @@ then
     cat >> ${appArmorFile} <<EOF
 # AppFirst
 /etc/AppFirst r,    # AppFirst
-${sharePath}/libwrap.so.1.0.1 mr,    # AppFirst
+${configFile} r,    # AppFirst
+${wrapPath}/libwrap.so.1.0.1 mr,    # AppFirst
 /dev/shm/ld_preload mr,    # AppFirst
 /run/shm/ld_preload mr,    # AppFirst
 /proc/*/stat mr,    # AppFirst
 EOF
-    /usr/sbin/invoke-rc.d apparmor reload
+  if [[ -x /usr/sbin/invoke-rc.d  ]]
+  then /usr/sbin/invoke-rc.d apparmor reload
+  fi # TODO: Is there any other mechanism by which apparmor would be reloaded?
   }
   fi
-fi
-# TODO: SELinux Flavor, address and test for CentOS stemcells.
+fi # TODO: SELinux Flavor, address and test on CentOS stemcells.
 
 # Configure the system for AppFirst
-echo "${sharePath}/libwrap.so.1.0.1" > ${configPath}/AppFirst.ld_preload
+echo "${wrapPath}/libwrap.so.1.0.1" > "${jobPath}/config/AppFirst.ld_preload"
 
-if [[ -s /etc/AppFirst ]]
-then 
-  collectorId=$(awk '/CollectorID/{print $2}' /etc/AppFirst 2>/dev/null | head -1)
+if [[ -s ${configFile} ]]
+then collectorId=$(awk '/CollectorID/{print $2}' ${configFile} 2>/dev/null | head -1)
 fi
 
-for file in AppFirst.ld_preload AppFirst.proxy
-do ${install} -m 0644 -T ${configPath}/${file} /etc/${file}
+for file in AppFirst.ld_preload
+do ${install} -m 0644 -T ${jobPath}/config/${file} /etc/${file}
 done
 
 if [[ -n ${collectorId:-} ]] # Preserve Collector ID
 then 
-	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" /etc/AppFirst > /etc/AppFirst.id
-	${install} -m 0644 -T /etc/AppFirst.id /etc/AppFirst
+	sed -e "/^<\/configuration>/i\   CollectorID ${collectorId}" ${configFile} > ${configFile}.id
+	${install} -m 0644 -T ${configFile}.id ${configFile}
 else
-	${install} -m 0644 -T ${configPath}/AppFirst /etc/AppFirst
+	${install} -m 0644 -T ${jobPath}/config/AppFirst ${configFile}
 fi
 
-# Create symlinks from BOSH paths so that the collector remains happy
-# NOTE: All of the below should be deleted once the collector allows
-#       for defining these locations.
-rm -rf /usr/share/appfirst /usr/bin/collector
-ln -fs ${libPath} /usr/share/appfirst
-ln -fs ${binPath}/${binName} /usr/bin/collector
-
-# Ensure the monitoring of all BOSH deployed CF jobs.
-# TODO: Test to see if this is necessary now that everythign is working as expected.
-#if ! grep -q -x "export LD_LIBRARY_PATH=${sharePath}" /var/vcap/packages/common/utils.sh
-#then echo -e "\nexport LD_LIBRARY_PATH=${sharePath}\n" >> /var/vcap/packages/common/utils.sh
-#fi
+cp ${jobPath}/config/AppFirst.proxy ${wrapPath}/AppFirst.proxy
 

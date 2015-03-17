@@ -11,5 +11,5 @@ then sleep $seconds
 fi
 
 # NOTE: The exit status of -a does not affect normal operations and thus ignored.
-${binPath}/${binName} -a &>/dev/null || true
+${binary} -a &>/dev/null || true
 

@@ -1,36 +1,39 @@
 #!/bin/bash
 
-fail() {
-  echo "$*" >&2
-  exit 1
-}
+fail() { echo "$*" >&2 ; exit 1 ; }
 
 pre_start() {
-  if ! [[ -L /usr/bin/collector && -x /usr/bin/collector ]]
-  then ${binPath}/install
-  fi
+  [[ -s ${wrapPath}/AppFirst ]] || ${jobPath}/bin/install
+
   appfirst_stop
-  rm -f ${pidFile} 
-  ln -fs ${pidFile} /var/run/afcollector.pid
-  cp ${configPath}/AppFirst.init /etc/AppFirst.init
+
+  # In case tag changes from BOSH upstream properties we do this each time:
+  cp ${jobPath}/config/AppFirst.init ${wrapPath}/AppFirst.init
+  cp ${jobPath}/config/AppFirst.init ${pkgPath}/lib/AppFirst.init
 }
 
 appfirst_start() {
   pre_start
-  ${binPath}/jmxcollector_ctl start
-  if ${binPath}/ld_preload check
+  ${jobPath}/bin/jmxcollector_ctl start
+  if ${jobPath}/bin/ld_preload check
   then 
-    (setsid ${binPath}/attach 2 &)
-    exec ${binPath}/${binName} # --piddir=${runPath}
+    (setsid ${jobPath}/bin/attach 2 &)
+    exec ${binary} --piddir=${runPath} --logdir=${logPath} --libdir=${pkgPath}/lib --datadir=${storePath}/data -D
   else fail "appfirst_start(): ld_preload check failed."
   fi
 }
 
 appfirst_stop() {
-  ${binPath}/jmxcollector_ctl stop
-  # ${binPath}/ld_preload remove # For BOSH systems we do not want to do this.
-  pid=$(pidof ${binPath}/${binName} || true)
-  (( ${pid:-0} == 0 )) || kill -9 ${pid}
+  ${jobPath}/bin/jmxcollector_ctl stop
+  # ${jobPath}/bin/ld_preload remove # For BOSH systems we do not want to do this.
+  pid=$(pidof ${binary} || true)
+  if (( ${pid:-0} > 0 ))
+  then
+    kill -TERM ${pid}
+    sleep 3 # give it 3 seconds to be graceful...
+    kill -9 ${pid}
+  fi
+  rm -f ${pidFile} 
 }
 
 appfirst_remove_ld_preload() {
@@ -38,7 +41,7 @@ appfirst_remove_ld_preload() {
   then
     export PATH=/usr/bin:/bin
     cp -f /etc/ld.so.preload /etc/AppFirst.ld_preload
-    sed -e "#${sharePath}/libwrap.so#d" /etc/ld.so.preload > /etc/ld.so.preload
+    sed -e "#${wrapPath}/libwrap.so#d" /etc/ld.so.preload > /etc/ld.so.preload
     flen=$(stat /etc/ld.so.preload | grep Size | cut -d: -f2 | cut -c1-2)
     if (( ${flen} < 3 ))
     then rm -f /etc/ld.so.preload
