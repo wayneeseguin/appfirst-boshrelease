@@ -27,6 +27,43 @@ send_signal() {
   fi
 }
 
+turn_debugging_on() {
+  export PS4='+(${BASH_SOURCE}:${LINENO})> ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+  export DEBUG="true" 
+  set -x
+  set -v
+}
+
+add_packages_to_path() { # Add all packages' /bin & /sbin into $PATH
+  for _path in $(ls -d /var/vcap/packages/*/*bin)
+  do PATH="${_path}:${PATH}"
+  done ; export PATH
+}
+
+configure_job_paths() {
+  _paths=(
+    "${jobPath}"
+    "${runPath}"
+    "${logPath}"
+    "${tmpPath}"
+    "${storePath}"
+    "${wrapPath}"
+    "${pkgPath}"
+    "${pkgPath}/lib"
+  )
+
+  for _path in "${_paths[@]}"
+  do
+    if ! [[ -d ${_path} ]]
+    then
+      mkdir -p "${_path}"
+      user chown "${_path}"
+      chmod 0775 "${_path}"
+    fi
+  done
+}
+
+
 pre_start() {
   [[ -s ${wrapPath}/AppFirst ]] || ${jobPath}/bin/install
 
@@ -102,42 +139,5 @@ appfirst_check_ld_preload() {
     rm -f /etc/ld.so.preload
     fail "ld_preload: WARNING: preload disabled: no ld_preload"
   fi
-}
-
-
-turn_debugging_on() {
-  export PS4='+(${BASH_SOURCE}:${LINENO})> ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-  export DEBUG="true" 
-  set -x
-  set -v
-}
-
-add_packages_to_path() { # Add all packages' /bin & /sbin into $PATH
-  for _path in $(ls -d /var/vcap/packages/*/*bin)
-  do PATH="${_path}:${PATH}"
-  done ; export PATH
-}
-
-configure_job_paths() {
-  _paths=(
-    "${jobPath}"
-    "${runPath}"
-    "${logPath}"
-    "${tmpPath}"
-    "${storePath}"
-    "${wrapPath}"
-    "${pkgPath}"
-    "${pkgPath}/lib"
-  )
-
-  for _path in "${_paths[@]}"
-  do
-    if ! [[ -d ${_path} ]]
-    then
-      mkdir -p "${_path}"
-      user chown "${_path}"
-      chmod 0775 "${_path}"
-    fi
-  done
 }
 
