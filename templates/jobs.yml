@@ -19,8 +19,8 @@ jobs:
       canaries: 10
     properties:
       appfirst:
-        tenant_id: "CHANGEME"
+        tenant_id: "ID # GOES HERE"
 
 networks: (( merge ))
 
-properties: {}
+properties: (( merge ))

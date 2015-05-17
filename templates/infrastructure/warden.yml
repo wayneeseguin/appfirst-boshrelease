@@ -2,7 +2,7 @@ meta:
   environment: appfirst-warden
 
   stemcell:
-    name: bosh-warden-boshlite-ubuntu
+    name: bosh-warden-boshlite-centos-7-go_agent
     version: latest
 
 update:
@@ -19,6 +19,7 @@ jobs:
         static_ips: ~
     properties:
       appfirst:
+        tenant_id: "ID # GOES HERE"
 
 compilation:
   cloud_properties:

@@ -5,18 +5,18 @@ meta:
   persistent_disk: 4096
 
   stemcell:
-    name: bosh-aws-xen-ubuntu
+    name: bosh-aws-xen-centos-7-go_agent
     version: latest
 
 jobs:
   - name: appfirst
-    instances: 2
+    instances: 1
     networks:
       - name: appfirst
     persistent_disk: (( meta.persistent_disk ))
     properties:
       appfirst:
-        tenant_id: CHANGEME
+        tenant_id: "ID # GOES HERE"
 
 compilation:
   cloud_properties:
