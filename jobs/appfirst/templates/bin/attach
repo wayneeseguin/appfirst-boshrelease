@@ -1,15 +1,10 @@
 #!/bin/bash
-
-set -e
-
 source /var/vcap/jobs/appfirst/shell/env
 
 seconds=${1:-1}
-
 if (( ${seconds} > 0 )) 
 then sleep $seconds
 fi
 
 # NOTE: The exit status of -a does not affect normal operations and thus ignored.
 ${binary} -a &>/dev/null || true
-

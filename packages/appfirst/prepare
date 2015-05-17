@@ -2,12 +2,12 @@
 
 set -e
 
-file="afcollector-106.tar.xz"
+file="afcollector-111.tar.xz"
 if [[ ! -s appfirst/${file} ]]
 then 
   deb="appfirst-latest-x86_64.deb"
   url="http://wwws.appfirst.com/packages/updates/${deb}"
-  version="106"
+  version="111"
 
   mkdir -p afupstream appfirst afcollector/{bin,conf,lib,plugins}
 

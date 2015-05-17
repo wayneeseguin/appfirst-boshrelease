@@ -14,6 +14,9 @@ templates:
   config/AppFirst.proxy: config/AppFirst.proxy
   etc/nrpe.cfg: etc/nrpe.cfg
 properties:
+  appfirst.debug:
+    description: "Enable debug output, can be 'true' or 'false' (default)."
+    default: "false"
   appfirst.tenant_id:
     description: "The Tenant ID assigned to your AppFirst account. Required."
   appfirst.tags:

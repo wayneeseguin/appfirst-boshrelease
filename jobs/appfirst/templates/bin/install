@@ -1,13 +1,10 @@
 #!/bin/bash
-
 source /var/vcap/jobs/appfirst/shell/env
 
 echo "Installing and configuring appfirst for ${arch}... from ${pkgPath}"
 
 if [[ -x ${pkgPath}/libwrap.so.1.0.1 ]]
-then
-  echo "AppFirst is already installed."
-  exit 0
+then echo "AppFirst is already installed." ; exit 0
 fi
 
 # Find the system install command.

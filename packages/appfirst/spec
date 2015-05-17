@@ -2,4 +2,4 @@
 name: appfirst
 dependencies: []
 files:
-- appfirst/afcollector-106.tar.xz
+- appfirst/afcollector-*.tar.xz

@@ -1,13 +1,9 @@
 #!/bin/bash
-
 source /var/vcap/jobs/appfirst/shell/env
-source /var/vcap/jobs/appfirst/shell/functions
 
 action=${1}
-
 case ${action} in
 	(check|remove) appfirst_${action}_ld_preload ;;
 	(*) fail "Usage: ld_preload {check|remove}" ;;
 esac
-
 exit 0

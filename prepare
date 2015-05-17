@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+set -e -u
+
+fail() { echo -e "$*" ; exit 1 ; }
+
+latest_uploaded_stemcell() {
+  bosh stemcells | awk "/bosh/&&/${stemcellOS}/" | awk -F'|' '{ print $2, $3 }' |
+    sort -nr -k2 | head -n1 | awk '{ print $1 }'
+}
+
+usage() { 
+  echo "
+  Usage: $0 <blobs|manifest|dev> [options]
+  Where [options] for the 'manifest' action are: aws-ec2, warden
+  Where [options] for the 'stemcell' action are: aws-ec2, warden
+  "
+}
+
+requireCommands() {
+  for cmd in ${@}
+  do
+    if ! command -v ${cmd} &>/dev/null
+    then
+      echo "${cmd} must be installed and available in the PATH in order to run $0"
+      exit 1
+    fi
+  done
+}
+
+prepare_blobs() {
+  [[ -d ${releasePath}/blobs ]] || mkdir ${releasePath}/blobs
+  echo "Preparing all packages..."
+  for script in ${releasePath}/packages/*/prepare
+  do
+    if [[ -s ${script} ]]
+    then 
+      echo ${script}
+      ( cd ${releasePath}/blobs ; ${SHELL} ${script} )
+    fi
+  done
+}
+
+prepare_stemcell() {
+  stemcellOS=${stemcellOS:-"centos"}
+  directorCPI=$(bosh status | awk '/CPI/{print $2}')
+  directorUUID=$(awk -F: '/target_uuid/{print $2}' ~/.bosh_config | tr -d ' ')
+  directorName=$(awk -F: '/target_name/{print $2}' ~/.bosh_config)
+  infrastructure=${1:-}
+  deploymentName="${releaseName}-${infrastructure}"
+
+  [[ -d ${tmpPath} ]] || mkdir -p$ {tmpPath}
+
+  case ${infrastructure} in
+    (aws-ec2)
+      if [[ ${directorCPI} != aws ]]
+      then fail "No AWS BOSH Director targeted. Please use 'bosh target' first."
+      fi
+      hypervisor="xen"
+      case ${stemcellOS} in
+        (ubuntu) 
+          stemcellURL="http://bosh.io/stemcells/bosh-aws-xen-light-ubuntu-trusty-go_agent" 
+          ;;
+        (centos) 
+          stemcellURL="http://bosh.io/stemcells/bosh-aws-xen-light-centos-7-go_agent" 
+          ;;
+        (*) 
+          fail "Unknown Stemcell OS '${stemcellOS}'" 
+          ;;
+      esac
+      ;;
+    (warden) 
+      if ! [[ "${directorName}" =~ "Bosh Lite Director" ]]
+      then fail "No BOSH Lite  bosh-lite with warden CPI.\nPlease use 'bosh target' first."
+      fi
+      hypervisor="warden"
+      case ${stemcellOS} in
+        (ubuntu)
+          stemcellURL="https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent" 
+          ;;
+        (centos) 
+          stemcellURL="https://bosh.io/d/stemcells/bosh-warden-boshlite-centos-go_agent" 
+          ;;
+        (*) 
+          fail "Unknown Stemcell OS '${stemcellOS}'" 
+          ;;
+      esac
+      ;;
+    (*)
+      usage 
+      fail 
+      ;;
+  esac
+  shift
+
+  stemcell=${stemcell:-$(latest_uploaded_stemcell)}
+  if [[ -z ${stemcell} ]]
+  then
+    stemcellFile="${stemcellsPath}/$(basename ${stemcellURL}).tar.gz"
+    if [[ -s ${stemcellFile} ]]
+    then 
+      echo -e "\nUploading local stemcell ${stemcellFile}..."
+      bosh upload stemcell ${stemcellFile}
+    else
+      echo -e "\nUploading latest ${hypervisor}/${stemcellOS} stemcell..."
+      bosh upload stemcell ${stemcellURL}
+    fi
+    stemcell=$(latest_uploaded_stemcell)
+  fi
+}
+
+prepare_dev_release() {
+  bosh create release --with-tarball --force
+  bosh -n upload release
+}
+
+if [[ ${DEBUG:-"false"} == "true" ]]
+then # Enable xtrace with context if debug is true.
+  export PS4='+(${BASH_SOURCE}:${LINENO})> ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+  set -x
+fi
+
+releasePath=$(cd $(dirname $0) ; echo $PWD)
+tmpPath=${releasePath}/tmp
+manifestsPath=${releasePath}/manifests
+stemcellsPath=${releasePath}/stemcells
+releaseName=$(awk -F: '/final_name/{print $2}' config/final.yml | tr -d ' ') 
+templatesPath="${releasePath}/templates"
+
+if (( $# > 0 ))
+then
+  action=$1
+  shift
+else
+  usage
+  fail
+fi
+
+case ${action} in
+  (dev)
+    prepare_dev_release
+    ;;
+  (blobs)
+    prepare_blobs
+    ;;
+  (stemcell)
+    prepare_stemcell
+    ;;
+  (manifest)
+    requireCommands spiff bosh
+    echo "Preparing to build the manifest... "
+
+    prepare_stemcell
+
+    sed       -e "s/DIRECTOR-UUID/${directorUUID}/g"       -e "s/NAME/${deploymentName}/g"       -e "s/STEMCELL/${stemcell}/g"       -e "s/ENVIRONMENT/pgbdr-${ENVIRONMENT:-"dev"}/g"       "${templatesPath}/stub.yml" > "${tmpPath}/targeted-director-stub.yml"
+
+    echo "Merging templates using the spiff..."
+
+    spiff merge       "${templatesPath}/deployment.yml"       "${templatesPath}/jobs.yml"       "${templatesPath}/infrastructure/${infrastructure}.yml"       "${tmpPath}/targeted-director-stub.yml"       $* > "${manifestsPath}/${deploymentName}-manifest.yml"
+
+    rm "${tmpPath}/targeted-director-stub.yml"
+
+    bosh deployment "${manifestsPath}/${deploymentName}-manifest.yml"
+
+    bosh status
+    ;;
+  (*) 
+    usage 
+    fail "Unknown action ${action}." 
+    ;;
+esac
+
+exit 0
