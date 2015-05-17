@@ -1,5 +1,5 @@
 <configuration>
-   Enabled <%= p('appfirst.tenant_id') > 0 ? "True" : "False" %>
+   Enabled <%= p('appfirst.tenant_id').to_i > 0 ? "True" : "False" %>
    CollectPeriod <%= p('appfirst.collection_interval') %>
    Profile <%= p('appfirst.profile_id') %>
    URL <%= p('appfirst.backend_url') %>
